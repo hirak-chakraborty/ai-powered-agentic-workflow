@@ -1,10 +1,12 @@
 # Test script for DirectPromptAgent class
 
+import os
+
 from workflow_agents.base_agents import DirectPromptAgent  # TODO: 1 - Import the DirectPromptAgent class from BaseAgents
 
 
 # TODO: 2 - Load the OpenAI API key from the environment variables
-openai_api_key = "voc-162453503315987449858456a4cf80da4e419.26965640"
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
 prompt = "What is the Capital of France?"
 
