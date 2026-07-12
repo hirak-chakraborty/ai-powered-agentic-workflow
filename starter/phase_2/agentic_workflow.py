@@ -59,12 +59,12 @@ product_manager_knowledge_agent = KnowledgeAugmentedPromptAgent(
 # TODO: 7 - Define the persona and evaluation criteria for a Product Manager evaluation agent and instantiate it as product_manager_evaluation_agent. This agent will evaluate the product_manager_knowledge_agent.
 # The evaluation_criteria should specify the expected structure for user stories (e.g., "As a [type of user], I want [an action or feature] so that [benefit/value].").
 evaluation_criteria_product_manager = (
-    "The answer should contain user stories following this exact structure: "
+    "The answer should be stories that follow the following structure: "
     "As a [type of user], I want [an action or feature] so that [benefit/value]."
 )
 product_manager_evaluation_agent = EvaluationAgent(
     openai_api_key,
-    "You are an evaluation agent that checks the answers of other worker agents.",
+    "You are an evaluation agent that checks the answers of other worker agents",
     evaluation_criteria_product_manager,
     product_manager_knowledge_agent,
     10
@@ -153,17 +153,20 @@ development_engineer_evaluation_agent = EvaluationAgent(
 )
 
 def product_manager_support_function(query):
-    result = product_manager_evaluation_agent.evaluate(query)
+    response = product_manager_knowledge_agent.respond(query)
+    result = product_manager_evaluation_agent.evaluate(query, response)
     return result["final_response"]
 
 
 def program_manager_support_function(query):
-    result = program_manager_evaluation_agent.evaluate(query)
+    response = program_manager_knowledge_agent.respond(query)
+    result = program_manager_evaluation_agent.evaluate(query, response)
     return result["final_response"]
 
 
 def development_engineer_support_function(query):
-    result = development_engineer_evaluation_agent.evaluate(query)
+    response = development_engineer_knowledge_agent.respond(query)
+    result = development_engineer_evaluation_agent.evaluate(query, response)
     return result["final_response"]
 # Routing Agent
 # TODO: 10 - Instantiate a routing_agent. You will need to define a list of agent dictionaries (routes) for Product Manager, Program Manager, and Development Engineer. Each dictionary should contain 'name', 'description', and 'func' (linking to a support function). Assign this list to the routing_agent's 'agents' attribute.
@@ -173,17 +176,29 @@ routing_agent = RoutingAgent(
 routes = [
     {
         "name": "Product Manager",
-        "description": "Create user stories from a product specification",
+        "description":(
+            "Responsible for defining user stories from the product specification only. "
+            "Does not define product features or development tasks. "
+            "Does not group related stories."
+        ),
         "func": product_manager_support_function
     },
     {
         "name": "Program Manager",
-        "description": "Create product features from user stories",
+        "description":(
+            "Responsible for organizing related user stories into product features only. "
+            "Does not create user stories. "
+            "Does not define development tasks."
+        ),
         "func": program_manager_support_function
     },
     {
         "name": "Development Engineer",
-        "description": "Create development tasks from product features",
+        "description":(
+            "Responsible for defining development tasks for user stories and product features. "
+            "Creates implementation tasks with acceptance criteria, effort estimates, and dependencies only. "
+            "Does not create user stories or product features."
+        ),
         "func": development_engineer_support_function
     }
 ]

@@ -264,24 +264,29 @@ class EvaluationAgent:
         self.worker_agent = worker_agent
         self.max_interactions = max_interactions
 
-    def evaluate(self, initial_prompt):
+    def evaluate(self, initial_prompt, response_from_worker=None):
         # This method manages interactions between agents to achieve a solution.
         client = OpenAI(
             base_url="https://openai.vocareum.com/v1",
             api_key=self.openai_api_key)
-        prompt_to_evaluate = initial_prompt
+        current_response = response_from_worker
+        evaluation = ""
 
         for i in range(self.max_interactions):
             print(f"\n--- Interaction {i+1} ---")
 
-            print(" Step 1: Worker agent generates a response to the prompt")
-            print(f"Prompt:\n{prompt_to_evaluate}")
-            response_from_worker = self.worker_agent.respond(prompt_to_evaluate)
-            print(f"Worker Agent Response:\n{response_from_worker}")
+            if current_response is None:
+                print(" Step 1: Worker agent generates a response to the prompt")
+                print(f"Prompt:\n{initial_prompt}")
+                current_response = self.worker_agent.respond(initial_prompt)
+                print(f"Worker Agent Response:\n{current_response}")
+            else:
+                print(" Step 1: Evaluator agent reviews the current response")
+                print(f"Response:\n{current_response}")
 
             print(" Step 2: Evaluator agent judges the response")
             eval_prompt = (
-                f"Does the following answer: {response_from_worker}\n"
+                f"Does the following answer: {current_response}\n"
                 f"Meet this criteria: {self.evaluation_criteria}\n"  # TODO: 4 - Insert evaluation criteria here
                 f"Respond Yes or No, and the reason why it does or doesn't meet the criteria."
             )
@@ -306,40 +311,42 @@ class EvaluationAgent:
             if evaluation.lower().startswith("yes"):
                 print("Final solution accepted.")
                 break
-            else:
-                print(" Step 4: Generate instructions to correct the response")
-                instruction_prompt = (
-                    f"Provide instructions to fix an answer based on these reasons why it is incorrect: {evaluation}"
-                )
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": self.persona
-                        },
-                        {
-                            "role": "user",
-                            "content": instruction_prompt
-                        }
-                    ],
-                    temperature=0
-                )
-                instructions = response.choices[0].message.content.strip()
-                print(f"Instructions to fix:\n{instructions}")
 
-                print(" Step 5: Send feedback to worker agent for refinement")
-                prompt_to_evaluate = (
-                    f"The original prompt was: {initial_prompt}\n"
-                    f"The response to that prompt was: {response_from_worker}\n"
-                    f"It has been evaluated as incorrect.\n"
-                    f"Make only these corrections, do not alter content validity: {instructions}"
-                )
+            print(" Step 4: Generate instructions to correct the response")
+            instruction_prompt = (
+                f"Provide instructions to fix an answer based on these reasons why it is incorrect: {evaluation}"
+            )
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": self.persona
+                    },
+                    {
+                        "role": "user",
+                        "content": instruction_prompt
+                    }
+                ],
+                temperature=0
+            )
+            instructions = response.choices[0].message.content.strip()
+            print(f"Instructions to fix:\n{instructions}")
+
+            print(" Step 5: Send feedback to worker agent for refinement")
+            current_response = self.worker_agent.respond(
+                f"The original prompt was: {initial_prompt}\n"
+                f"The response to that prompt was: {current_response}\n"
+                f"It has been evaluated as incorrect.\n"
+                f"Make only these corrections, do not alter content validity: {instructions}"
+            )
+            print(f"Refined Worker Agent Response:\n{current_response}")
+
         return {
-            "final_response": response_from_worker, 
+            "final_response": current_response,
             "evaluation": evaluation,
             "iterations": i + 1
-        }   
+        }
 
 
 class RoutingAgent():
