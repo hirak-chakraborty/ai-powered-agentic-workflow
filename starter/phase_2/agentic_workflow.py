@@ -232,14 +232,22 @@ print("\nDefining workflow steps from the workflow prompt")
 workflow_steps = action_planning_agent.extract_steps_from_prompt(workflow_prompt)
 
 completed_steps = []
+current_workflow_context = product_spec
 
 for step in workflow_steps:
 
     print(f"\nExecuting step: {step}")
 
-    result = routing_agent.route(step)
+    routed_input = (
+        f"Workflow step: {step}\n\n"
+        f"Use the following input context to complete this step:\n"
+        f"{current_workflow_context}"
+    )
+
+    result = routing_agent.route(routed_input)
 
     completed_steps.append(result)
+    current_workflow_context = result
 
     print(result)
 
