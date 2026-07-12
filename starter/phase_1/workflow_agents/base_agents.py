@@ -172,7 +172,7 @@ class RAGKnowledgePromptAgent:
         list: List of dictionaries containing chunk metadata.
         """
         separator = "\n"
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"\s+", " ", text).strip()
 
         if len(text) <= self.chunk_size:
             return [{"chunk_id": 0, "text": text, "chunk_size": len(text)}]
@@ -192,14 +192,22 @@ class RAGKnowledgePromptAgent:
                 "end_char": end
             })
 
+            if end == len(text):
+                break
+
             start = end - self.chunk_overlap
+            if start < 0:
+                start = 0
             chunk_id += 1
 
-        with open(f"chunks-{self.unique_filename}", 'w', newline='', encoding='utf-8') as csvfile:
+        with open(f"chunks-{self.unique_filename}", 'w', newline="", encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=["text", "chunk_size"])
             writer.writeheader()
             for chunk in chunks:
-                writer.writerow({k: chunk[k] for k in ["text", "chunk_size"]})
+                writer.writerow({
+                    "text": chunk["text"],
+                    "chunk_size": chunk["chunk_size"]
+                })
 
         return chunks
 
@@ -296,7 +304,7 @@ class EvaluationAgent:
 
             print(" Step 3: Check if evaluation is positive")
             if evaluation.lower().startswith("yes"):
-                print("✅ Final solution accepted.")
+                print("Final solution accepted.")
                 break
             else:
                 print(" Step 4: Generate instructions to correct the response")
