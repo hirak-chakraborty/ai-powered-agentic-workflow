@@ -253,6 +253,33 @@ for step in workflow_steps:
 
 print("\n*** Workflow Complete ***")
 
+section_titles = [
+    "User Stories",
+    "Product Features",
+    "Engineering Tasks"
+]
+
+final_output_sections = [
+    "==================================",
+    "Email Router Project Plan",
+    "=================================="
+]
+
+for index, step_output in enumerate(completed_steps):
+    if index < len(section_titles):
+        section_title = section_titles[index]
+    else:
+        section_title = f"Additional Workflow Step {index + 1}"
+
+    final_output_sections.extend([
+        "",
+        section_title,
+        "--------------------------------",
+        str(step_output)
+    ])
+
+final_output = "\n".join(final_output_sections)
+
 print("\nFinal Output:\n")
 
-print(completed_steps[-1])
+print(final_output)
